@@ -1,4 +1,6 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
+
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
@@ -14,6 +16,15 @@ const allowedOrigins = [
   "http://localhost:5500",
   "http://127.0.0.1:5500",
 ];
+
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minuta
+  max: 5, // max 5 zahteva po IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Previše zahteva. Pokušajte ponovo za 15 minuta." }
+});
 
 app.use(
   cors({
@@ -61,7 +72,7 @@ app.get("/", (req, res) => {
   res.json({ ok: true, message: "MP Web Studio API radi ✅" });
 });
 
-app.post("/api/contact", async (req, res) => {
+app.post("/api/contact", contactLimiter, async (req, res) => {
   const name = String(req.body?.name || "").trim();
   const email = String(req.body?.email || "").trim();
   const message = String(req.body?.message || "").trim();
